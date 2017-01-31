@@ -57,7 +57,7 @@ function getLyrics(artist, songTitle, callback, errorCallback) {
 
 function parseTitle(searchTerm, callback, errorCallback) {
     console.log(searchTerm);
-    var searchUrl = 'https://api.lyrics.ovh/suggest/' + searchTerm;
+    var searchUrl = 'https://api.alltomp3.org/v1/guess-track/' + searchTerm;
     var x = new XMLHttpRequest();
     x.open('GET', searchUrl);
     // The Google image search API responds with JSON, so let Chrome parse it.
@@ -65,13 +65,13 @@ function parseTitle(searchTerm, callback, errorCallback) {
     x.onload = function() {
       // Parse and process the response from Google Image Search.
       var response = x.response;
-      if (!response || !response.data ||
-          response.data.length === 0) {
+      if (!response || !response.title ||
+          !response.artistName) {
         errorCallback('No suggestion for this video!');
         return;
       }
-      var result = response.data[0];
-      var artist = result.artist.name;
+      var result = response
+      var artist = result.artistName;
       var songTitle = result.title;
       callback(artist, songTitle);
     };
