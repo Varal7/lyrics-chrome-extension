@@ -19,7 +19,6 @@ function getCurrentTabTitle(callback) {
     var tab = tabs[0];
     var title = tab.title;
 
-    console.log(title);
     console.assert(typeof title == 'string', 'tab.url should be a string');
     callback(title);
   });
@@ -56,6 +55,32 @@ function getLyrics(artist, songTitle, callback, errorCallback) {
   x.send();
 }
 
+function parseTitle(searchTerm, callback, errorCallback) {
+    console.log(searchTerm);
+    var searchUrl = 'https://api.lyrics.ovh/suggest/' + searchTerm;
+    var x = new XMLHttpRequest();
+    x.open('GET', searchUrl);
+    // The Google image search API responds with JSON, so let Chrome parse it.
+    x.responseType = 'json';
+    x.onload = function() {
+      // Parse and process the response from Google Image Search.
+      var response = x.response;
+      if (!response || !response.data ||
+          response.data.length === 0) {
+        errorCallback('No suggestion for this video!');
+        return;
+      }
+      var result = response.data[0];
+      var artist = result.artist.name;
+      var songTitle = result.title;
+      callback(artist, songTitle);
+    };
+    x.onerror = function() {
+      errorCallback('Network error.');
+    };
+    x.send();
+}
+
 function renderStatus(statusText) {
   document.getElementById('status').textContent = statusText;
 }
@@ -64,19 +89,21 @@ document.addEventListener('DOMContentLoaded', function() {
 
   getCurrentTabTitle(function(title) {
     // Parse the title of the video
-    // TODO: Use Deezer's API or YouTube's metedata
+    // TODO: Use YouTube's metedata
     var components = title.split('-');
-    var artist = components.shift();
     if (components[components.length - 1] == " YouTube") {
         components.pop()
     }
-    var songTitle = components.join('|');
+    var searchTerm = components.join('-');
+    parseTitle(searchTerm, function(artist, songTitle){
+        renderStatus('Performing Lyrics.ovh search for artist:' + artist
+                    + ', and song name:' + songTitle);
 
-    renderStatus('Performing Lyrics.ovh search for artist:' + artist
-                + ', and song name:' + songTitle);
-
-    getLyrics(artist, songTitle, function(lyrics) {
-      renderStatus(lyrics);
+        getLyrics(artist, songTitle, function(lyrics) {
+          renderStatus(lyrics);
+        }, function(errorMessage) {
+          renderStatus('Cannot display lyrics. ' + errorMessage);
+        });
     }, function(errorMessage) {
       renderStatus('Cannot display lyrics. ' + errorMessage);
     });
